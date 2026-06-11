@@ -22,9 +22,16 @@ class AppTexts {
 
   static const String addCategoryTitle = 'Add Category';
   static const String addCategoryHint = 'e.g. Food, Transport, Rent';
+  static const String categoryNameRequired = 'Category name is required.';
+  static const String categoryNameInvalid =
+      'Use only letters, numbers, and spaces.';
+  static const String categoryNameDuplicate = 'Category name already exists.';
+  static const String categorySaveFailed =
+      'Could not save category. Please try again.';
   static const String cancel = 'Cancel';
   static const String save = 'Save';
-  static const String noCategoriesYet = 'No categories yet. Add your first one.';
+  static const String noCategoriesYet =
+      'No categories yet. Add your first one.';
 
   static const String uncategorizedCategoryName = 'Uncategorize expenses';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:budget_app/core/database/app_database.dart';
 import 'package:budget_app/core/text/app_text_provider.dart';
-import 'package:budget_app/feature/home/presentation/provider/home_provider.dart';
+import 'package:budget_app/feature/home/provider/home_provider.dart';
 import 'package:budget_app/feature/home/presentation/widget/add_expense_dialog.dart';
 import 'package:budget_app/feature/home/presentation/widget/app_drawer.dart';
 import 'package:budget_app/feature/home/presentation/widget/category_wheel_chart.dart';

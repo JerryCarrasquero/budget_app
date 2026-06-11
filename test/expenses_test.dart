@@ -76,7 +76,9 @@ void main() {
       expect(joined.any((row) => row.category.name == 'Transport'), isTrue);
 
       final foodTotal = totals.firstWhere((row) => row.category.name == 'Food');
-      final transportTotal = totals.firstWhere((row) => row.category.name == 'Transport');
+      final transportTotal = totals.firstWhere(
+        (row) => row.category.name == 'Transport',
+      );
 
       expect(foodTotal.total, 80);
       expect(transportTotal.total, 20);
@@ -102,8 +104,9 @@ void main() {
 
       await db.deleteCategory(travelId);
 
-      final uncategorized = (await db.getAllCategories())
-          .firstWhere((c) => c.name == uncategorizedCategoryName);
+      final uncategorized = (await db.getAllCategories()).firstWhere(
+        (c) => c.name == uncategorizedCategoryName,
+      );
       final expenses = await db.getAllExpenses();
 
       expect(expenses.length, 1);
@@ -112,28 +115,77 @@ void main() {
       await db.close();
     });
 
-    test('ExpenseDataSource sanitizes expense name and rounds amount', () async {
-      final db = AppDatabase(NativeDatabase.memory());
-      final dataSource = ExpenseDataSource(db);
+    test(
+      'ExpenseDataSource sanitizes expense name and rounds amount',
+      () async {
+        final db = AppDatabase(NativeDatabase.memory());
+        try {
+          final dataSource = ExpenseDataSource(db);
 
-      final categoryId = await db.insertCategory(
-        CategoriesCompanion.insert(name: 'Food'),
-      );
+          final categoryId = await db.insertCategory(
+            CategoriesCompanion.insert(name: 'Food'),
+          );
 
-      await dataSource.addExpense(
-        name: '  Lu@@nch!!  ',
-        amount: 19.999,
-        categoryId: categoryId,
-        date: DateTime(2026, 6, 12),
-      );
+          await dataSource.addExpense(
+            name: '  Lu@@nch!!  ',
+            amount: 19.999,
+            categoryId: categoryId,
+            date: DateTime(2026, 6, 12),
+          );
 
-      final expenses = await db.getAllExpenses();
+          final expenses = await db.getAllExpenses();
 
-      expect(expenses.length, 1);
-      expect(expenses.first.name, 'Lunch');
-      expect(expenses.first.amount, 20.0);
+          expect(expenses.length, 1);
+          expect(expenses.first.name, 'Lunch');
+          expect(expenses.first.amount, 20.0);
+        } finally {
+          await db.close();
+        }
+      },
+    );
 
-      await db.close();
-    });
+    test(
+      'ExpenseDataSource watchAll streams emit category and expense changes',
+      () async {
+        final db = AppDatabase(NativeDatabase.memory());
+        final dataSource = ExpenseDataSource(db);
+
+        final categoriesExpectation = expectLater(
+          dataSource.watchAllCategories(),
+          emitsThrough(
+            predicate<List<Category>>(
+              (items) => items.any((category) => category.name == 'Food'),
+            ),
+          ),
+        );
+
+        final expensesExpectation = expectLater(
+          dataSource.watchAllExpenses(),
+          emitsThrough(
+            predicate<List<Expense>>(
+              (items) => items.any(
+                (expense) => expense.name == 'Lunch' && expense.amount == 50.0,
+              ),
+            ),
+          ),
+        );
+
+        final categoryId = await db.insertCategory(
+          CategoriesCompanion.insert(name: 'Food'),
+        );
+
+        await dataSource.addExpense(
+          name: 'Lunch',
+          amount: 50,
+          categoryId: categoryId,
+          date: DateTime(2026, 6, 13),
+        );
+
+        await categoriesExpectation;
+        await expensesExpectation;
+
+        await db.close();
+      },
+    );
   });
 }
