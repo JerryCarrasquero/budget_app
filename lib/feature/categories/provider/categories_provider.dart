@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:budget_app/core/database/app_database.dart';
 import 'package:budget_app/feature/categories/data/category_data_source.dart';
+import 'package:budget_app/feature/categories/domain/add_category_result.dart';
 import 'package:budget_app/feature/categories/domain/exceptions/duplicate_category_name_exception.dart';
 import 'package:budget_app/feature/categories/domain/category_name.dart';
 import 'package:flutter/material.dart';
@@ -25,10 +26,14 @@ class CategoriesProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> addCategory(String name, int color, int icon) async {
+  Future<AddCategoryResult> addCategory(
+    String name,
+    int color,
+    int icon,
+  ) async {
     final categoryName = CategoryName.fromRaw(name);
     if (categoryName == null) {
-      return;
+      return AddCategoryResult.invalidName;
     }
 
     // UX optimization only: authoritative duplicate protection lives in data layer.
@@ -36,7 +41,7 @@ class CategoriesProvider extends ChangeNotifier {
       (category) => categoryName.equalsIgnoringCase(category.name),
     );
     if (alreadyExists) {
-      return;
+      return AddCategoryResult.duplicate;
     }
 
     try {
@@ -45,9 +50,12 @@ class CategoriesProvider extends ChangeNotifier {
         color: color,
         icon: icon,
       );
+      return AddCategoryResult.success;
     } on DuplicateCategoryNameException {
       // Another writer inserted the same name before this request completed.
-      return;
+      return AddCategoryResult.duplicate;
+    } catch (_) {
+      return AddCategoryResult.failure;
     }
   }
 

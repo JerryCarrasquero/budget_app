@@ -25,6 +25,10 @@ class AppTextProvider {
   String get addExpenseCategoryHint => AppTexts.addExpenseCategoryHint;
   String get addCategoryTitle => AppTexts.addCategoryTitle;
   String get addCategoryHint => AppTexts.addCategoryHint;
+  String get categoryNameRequired => AppTexts.categoryNameRequired;
+  String get categoryNameInvalid => AppTexts.categoryNameInvalid;
+  String get categoryNameDuplicate => AppTexts.categoryNameDuplicate;
+  String get categorySaveFailed => AppTexts.categorySaveFailed;
   String get cancel => AppTexts.cancel;
   String get save => AppTexts.save;
   String get noCategoriesYet => AppTexts.noCategoriesYet;

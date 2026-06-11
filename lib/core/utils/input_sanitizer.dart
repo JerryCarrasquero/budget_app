@@ -4,8 +4,8 @@ class InputSanitizer {
   }
 
   static String sanitizeCategoryName(String input) {
-    final lettersOnly = input.replaceAll(RegExp(r'[^A-Za-z\s]'), '');
-    return _collapseWhitespace(lettersOnly);
+    final alphanumeric = input.replaceAll(RegExp(r'[^A-Za-z0-9\s]'), '');
+    return _collapseWhitespace(alphanumeric);
   }
 
   static String? sanitizeExpenseName(String? input) {
@@ -28,7 +28,9 @@ class InputSanitizer {
     String normalized = digitsAndDot;
     if (firstDotIndex != -1) {
       final integerPart = digitsAndDot.substring(0, firstDotIndex + 1);
-      final rawDecimalPart = digitsAndDot.substring(firstDotIndex + 1).replaceAll('.', '');
+      final rawDecimalPart = digitsAndDot
+          .substring(firstDotIndex + 1)
+          .replaceAll('.', '');
       final decimalPart = rawDecimalPart.length <= 2
           ? rawDecimalPart
           : rawDecimalPart.substring(0, 2);
