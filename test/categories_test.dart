@@ -1,5 +1,5 @@
 import 'package:budget_app/core/database/app_database.dart';
-import 'package:budget_app/feature/categories/presentation/provider/categories_provider.dart';
+import 'package:budget_app/feature/categories/provider/categories_provider.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';

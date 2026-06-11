@@ -16,13 +16,11 @@ class AppDrawer extends StatelessWidget {
           ListTile(
             leading: const Icon(Icons.category),
             title: Text(text.categories),
-            onTap: () {
+            onTap: () async {
               Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const CategoriesPage(),
-                ),
-              );
+              await Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const CategoriesPage()));
             },
           ),
           ListTile(

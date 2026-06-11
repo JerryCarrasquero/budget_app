@@ -1,4 +1,4 @@
-import 'package:budget_app/feature/categories/presentation/provider/categories_provider.dart';
+import 'package:budget_app/feature/categories/provider/categories_provider.dart';
 import 'package:budget_app/core/text/app_text_provider.dart';
 import 'package:budget_app/core/utils/input_sanitizer.dart';
 import 'package:flutter/material.dart';

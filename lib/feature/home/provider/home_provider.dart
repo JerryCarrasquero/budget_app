@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:budget_app/core/database/app_database.dart';
 import 'package:budget_app/feature/home/data/expense_data_source.dart';
@@ -5,6 +7,9 @@ import 'package:budget_app/feature/home/domain/monthly_expenses.dart';
 
 class HomeProvider extends ChangeNotifier {
   final ExpenseDataSource _dataSource;
+  StreamSubscription<List<Category>>? _categoriesSubscription;
+  StreamSubscription<List<Expense>>? _expensesSubscription;
+  int _refreshRevision = 0;
 
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
@@ -19,25 +24,37 @@ class HomeProvider extends ChangeNotifier {
   bool _isLoading = false;
 
   HomeProvider(AppDatabase database)
-      : _dataSource = ExpenseDataSource(database) {
-    loadCurrentMonthExpenses();
+    : _dataSource = ExpenseDataSource(database) {
+    _categoriesSubscription = _dataSource.watchAllCategories().listen((
+      categories,
+    ) {
+      _availableCategories = categories;
+      _refreshCurrentMonthData();
+    });
+
+    _expensesSubscription = _dataSource.watchAllExpenses().listen((_) {
+      _refreshCurrentMonthData();
+    });
+
+    _refreshCurrentMonthData();
   }
 
   int get selectedYear => _selectedYear;
   int get selectedMonth => _selectedMonth;
   bool get isLoading => _isLoading;
   List<Category> get availableCategories => _availableCategories;
-  List<ExpenseWithCategory> get currentMonthlyExpenseItems => _currentMonthlyExpenseItems;
+  List<ExpenseWithCategory> get currentMonthlyExpenseItems =>
+      _currentMonthlyExpenseItems;
   List<CategoryExpenseTotal> get categoryTotals => _categoryTotals;
 
   set selectedYear(int year) {
     _selectedYear = year;
-    loadCurrentMonthExpenses();
+    _refreshCurrentMonthData();
   }
 
   set selectedMonth(int month) {
     _selectedMonth = month;
-    loadCurrentMonthExpenses();
+    _refreshCurrentMonthData();
   }
 
   MonthlyExpenses get currentMonthlyExpenses => _currentMonthlyExpenses;
@@ -52,31 +69,67 @@ class HomeProvider extends ChangeNotifier {
       amount: amount,
       categoryId: categoryId,
     );
-    await loadCurrentMonthExpenses();
   }
 
   Future<List<Category>> loadCategoriesForDialog() async {
+    if (_availableCategories.isNotEmpty) {
+      return _availableCategories;
+    }
+
     final categories = await _dataSource.getAllCategories();
     _availableCategories = categories;
     notifyListeners();
-    return categories;
+    return _availableCategories;
   }
 
   Future<void> loadCurrentMonthExpenses() async {
+    await _refreshCurrentMonthData();
+  }
+
+  Future<void> _refreshCurrentMonthData() async {
+    final currentRevision = ++_refreshRevision;
     _isLoading = true;
     notifyListeners();
 
-    _availableCategories = await _dataSource.getAllCategories();
-    final expenses = await _dataSource.getExpensesByMonth(_selectedYear, _selectedMonth);
-    _currentMonthlyExpenseItems = await _dataSource.getExpensesWithCategoryByMonth(_selectedYear, _selectedMonth);
-    _categoryTotals = await _dataSource.getCategoryTotalsByMonth(_selectedYear, _selectedMonth);
-    _currentMonthlyExpenses = MonthlyExpenses(
-      year: _selectedYear,
-      month: _selectedMonth,
-      expenses: expenses,
+    final selectedYear = _selectedYear;
+    final selectedMonth = _selectedMonth;
+
+    final expensesFuture = _dataSource.getExpensesByMonth(
+      selectedYear,
+      selectedMonth,
+    );
+    final expenseItemsFuture = _dataSource.getExpensesWithCategoryByMonth(
+      selectedYear,
+      selectedMonth,
+    );
+    final categoryTotalsFuture = _dataSource.getCategoryTotalsByMonth(
+      selectedYear,
+      selectedMonth,
     );
 
+    final expenses = await expensesFuture;
+    final expenseItems = await expenseItemsFuture;
+    final categoryTotals = await categoryTotalsFuture;
+
+    if (currentRevision != _refreshRevision) {
+      return;
+    }
+
+    _currentMonthlyExpenses = MonthlyExpenses(
+      year: selectedYear,
+      month: selectedMonth,
+      expenses: expenses,
+    );
+    _currentMonthlyExpenseItems = expenseItems;
+    _categoryTotals = categoryTotals;
     _isLoading = false;
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _categoriesSubscription?.cancel();
+    _expensesSubscription?.cancel();
+    super.dispose();
   }
 }

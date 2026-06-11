@@ -1,4 +1,4 @@
-import 'package:budget_app/feature/categories/presentation/provider/categories_provider.dart';
+import 'package:budget_app/feature/categories/provider/categories_provider.dart';
 import 'package:budget_app/feature/categories/presentation/widget/add_category_dialog.dart';
 import 'package:budget_app/feature/categories/presentation/widget/categories_body.dart';
 import 'package:budget_app/core/database/app_database.dart';
