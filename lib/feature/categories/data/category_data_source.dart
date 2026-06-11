@@ -19,9 +19,11 @@ class CategoryDataSource {
     await _database.transaction(() async {
       final existing =
           await (_database.select(_database.categories)
-                ..where((tbl) => tbl.name.lower().equals(name.toLowerCase())))
-              .getSingleOrNull();
-      if (existing != null) {
+                ..where((tbl) => tbl.name.lower().equals(name.toLowerCase()))
+                ..limit(2))
+              .get();
+
+      if (existing.length > 1 || existing.length == 1) {
         throw DuplicateCategoryNameException(name);
       }
 

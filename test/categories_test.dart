@@ -1,6 +1,6 @@
 import 'package:budget_app/core/database/app_database.dart';
-import 'package:budget_app/core/text/app_texts.dart';
 import 'package:budget_app/core/text/app_text_provider.dart';
+import 'package:budget_app/core/text/app_texts.dart';
 import 'package:budget_app/feature/categories/domain/add_category_result.dart';
 import 'package:budget_app/feature/categories/presentation/widget/add_category_dialog.dart';
 import 'package:budget_app/feature/categories/provider/categories_provider.dart';
@@ -119,6 +119,37 @@ void main() {
 
         expect(find.text(AppTexts.categoryNameDuplicate), findsNothing);
         expect(find.text(AppTexts.categoryNameInvalid), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Add Category form keeps save disabled until color and icon are selected',
+      (WidgetTester tester) async {
+        final controller = TextEditingController(text: 'Pet123');
+        addTearDown(controller.dispose);
+
+        await tester.pumpWidget(
+          MultiProvider(
+            providers: [
+              Provider<AppTextProvider>.value(value: const AppTextProvider()),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: AddCategoryDialog(
+                  controller: controller,
+                  onSave: (name, color, icon) async =>
+                      AddCategoryResult.success,
+                  isDuplicateName: (_) => false,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final saveButton = tester.widget<FilledButton>(
+          find.byType(FilledButton),
+        );
+        expect(saveButton.onPressed, equals(null));
       },
     );
   });

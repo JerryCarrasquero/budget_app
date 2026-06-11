@@ -209,23 +209,7 @@ class _AddCategoryDialogState extends State<AddCategoryDialog> {
                     ).showSnackBar(SnackBar(content: Text(message)));
                   }
                 }
-              : () {
-                  setState(() => _submitted = true);
-                  String? message;
-                  if (hasInvalidCharacters) {
-                    message = text.categoryNameInvalid;
-                  } else if (sanitizedName.isEmpty) {
-                    message = text.categoryNameRequired;
-                  } else if (hasDuplicate) {
-                    message = text.categoryNameDuplicate;
-                  }
-
-                  if (message != null) {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(message)));
-                  }
-                },
+              : null,
           child: Text(text.save),
         ),
       ],
