@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:budget_app/core/database/app_database.dart';
 import 'package:budget_app/feature/categories/data/category_data_source.dart';
+import 'package:budget_app/feature/categories/domain/exceptions/duplicate_category_name_exception.dart';
 import 'package:budget_app/feature/categories/domain/category_name.dart';
 import 'package:flutter/material.dart';
 
@@ -30,6 +31,7 @@ class CategoriesProvider extends ChangeNotifier {
       return;
     }
 
+    // UX optimization only: authoritative duplicate protection lives in data layer.
     final alreadyExists = _categories.any(
       (category) => categoryName.equalsIgnoringCase(category.name),
     );
@@ -37,11 +39,16 @@ class CategoriesProvider extends ChangeNotifier {
       return;
     }
 
-    await _dataSource.addCategory(
-      name: categoryName.value,
-      color: color,
-      icon: icon,
-    );
+    try {
+      await _dataSource.addCategory(
+        name: categoryName.value,
+        color: color,
+        icon: icon,
+      );
+    } on DuplicateCategoryNameException {
+      // Another writer inserted the same name before this request completed.
+      return;
+    }
   }
 
   Future<void> deleteCategory(int id) {

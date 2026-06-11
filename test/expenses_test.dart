@@ -119,26 +119,28 @@ void main() {
       'ExpenseDataSource sanitizes expense name and rounds amount',
       () async {
         final db = AppDatabase(NativeDatabase.memory());
-        final dataSource = ExpenseDataSource(db);
+        try {
+          final dataSource = ExpenseDataSource(db);
 
-        final categoryId = await db.insertCategory(
-          CategoriesCompanion.insert(name: 'Food'),
-        );
+          final categoryId = await db.insertCategory(
+            CategoriesCompanion.insert(name: 'Food'),
+          );
 
-        await dataSource.addExpense(
-          name: '  Lu@@nch!!  ',
-          amount: 19.999,
-          categoryId: categoryId,
-          date: DateTime(2026, 6, 12),
-        );
+          await dataSource.addExpense(
+            name: '  Lu@@nch!!  ',
+            amount: 19.999,
+            categoryId: categoryId,
+            date: DateTime(2026, 6, 12),
+          );
 
-        final expenses = await db.getAllExpenses();
+          final expenses = await db.getAllExpenses();
 
-        expect(expenses.length, 1);
-        expect(expenses.first.name, 'Lunch');
-        expect(expenses.first.amount, 20.0);
-
-        await db.close();
+          expect(expenses.length, 1);
+          expect(expenses.first.name, 'Lunch');
+          expect(expenses.first.amount, 20.0);
+        } finally {
+          await db.close();
+        }
       },
     );
 

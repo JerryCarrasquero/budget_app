@@ -10,6 +10,7 @@ class HomeProvider extends ChangeNotifier {
   StreamSubscription<List<Category>>? _categoriesSubscription;
   StreamSubscription<List<Expense>>? _expensesSubscription;
   int _refreshRevision = 0;
+  bool _isDisposed = false;
 
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
@@ -32,9 +33,7 @@ class HomeProvider extends ChangeNotifier {
       _refreshCurrentMonthData();
     });
 
-    _expensesSubscription = _dataSource.watchAllExpenses().listen((_) {
-      _refreshCurrentMonthData();
-    });
+    _subscribeToSelectedMonthExpenses();
 
     _refreshCurrentMonthData();
   }
@@ -49,11 +48,13 @@ class HomeProvider extends ChangeNotifier {
 
   set selectedYear(int year) {
     _selectedYear = year;
+    _subscribeToSelectedMonthExpenses();
     _refreshCurrentMonthData();
   }
 
   set selectedMonth(int month) {
     _selectedMonth = month;
+    _subscribeToSelectedMonthExpenses();
     _refreshCurrentMonthData();
   }
 
@@ -89,7 +90,7 @@ class HomeProvider extends ChangeNotifier {
   Future<void> _refreshCurrentMonthData() async {
     final currentRevision = ++_refreshRevision;
     _isLoading = true;
-    notifyListeners();
+    _notifySafely();
 
     final selectedYear = _selectedYear;
     final selectedMonth = _selectedMonth;
@@ -107,27 +108,49 @@ class HomeProvider extends ChangeNotifier {
       selectedMonth,
     );
 
-    final expenses = await expensesFuture;
-    final expenseItems = await expenseItemsFuture;
-    final categoryTotals = await categoryTotalsFuture;
+    try {
+      final expenses = await expensesFuture;
+      final expenseItems = await expenseItemsFuture;
+      final categoryTotals = await categoryTotalsFuture;
 
-    if (currentRevision != _refreshRevision) {
+      if (currentRevision != _refreshRevision || _isDisposed) {
+        return;
+      }
+
+      _currentMonthlyExpenses = MonthlyExpenses(
+        year: selectedYear,
+        month: selectedMonth,
+        expenses: expenses,
+      );
+      _currentMonthlyExpenseItems = expenseItems;
+      _categoryTotals = categoryTotals;
+    } finally {
+      if (currentRevision == _refreshRevision && !_isDisposed) {
+        _isLoading = false;
+        _notifySafely();
+      }
+    }
+  }
+
+  void _subscribeToSelectedMonthExpenses() {
+    _expensesSubscription?.cancel();
+    _expensesSubscription = _dataSource
+        .watchExpensesByMonth(_selectedYear, _selectedMonth)
+        .listen((_) {
+          _refreshCurrentMonthData();
+        });
+  }
+
+  void _notifySafely() {
+    if (_isDisposed) {
       return;
     }
-
-    _currentMonthlyExpenses = MonthlyExpenses(
-      year: selectedYear,
-      month: selectedMonth,
-      expenses: expenses,
-    );
-    _currentMonthlyExpenseItems = expenseItems;
-    _categoryTotals = categoryTotals;
-    _isLoading = false;
     notifyListeners();
   }
 
   @override
   void dispose() {
+    _isDisposed = true;
     _categoriesSubscription?.cancel();
     _expensesSubscription?.cancel();
     super.dispose();

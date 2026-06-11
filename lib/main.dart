@@ -7,11 +7,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final db = AppDatabase();
-  const bool runningUnderTest = bool.fromEnvironment(
-    'FLUTTER_TEST',
-    defaultValue: false,
-  );
-  if (!runningUnderTest) {
+  if (!const bool.fromEnvironment('FLUTTER_TEST')) {
     await runDemoSeedSetupIfEnabled(db);
   }
   runApp(App(database: db));
