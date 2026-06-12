@@ -125,11 +125,25 @@ class AppDatabase extends _$AppDatabase {
   Future<bool> updateExpense(Expense expense) => update(expenses).replace(expense);
   Future<int> deleteExpense(int id) => (delete(expenses)..where((tbl) => tbl.id.equals(id))).go();
 
-  Future<List<ExpenseWithCategory>> getExpensesWithCategoryByMonth(int year, int month) async {
+  ({DateTime start, DateTime end}) _monthDateRange(int year, int month) {
     final start = DateTime(year, month, 1);
     final end = (month < 12)
         ? DateTime(year, month + 1, 1)
         : DateTime(year + 1, 1, 1);
+    return (start: start, end: end);
+  }
+
+  void _validateRange(DateTime start, DateTime end) {
+    if (!start.isBefore(end)) {
+      throw ArgumentError('start must be before end');
+    }
+  }
+
+  Future<List<ExpenseWithCategory>> getExpensesWithCategoryByPeriod(
+    DateTime start,
+    DateTime end,
+  ) async {
+    _validateRange(start, end);
 
     final joinedRows = await (select(expenses).join([
       innerJoin(categories, categories.id.equalsExp(expenses.categoryId)),
@@ -148,11 +162,16 @@ class AppDatabase extends _$AppDatabase {
         .toList();
   }
 
-  Future<List<CategoryExpenseTotal>> getCategoryTotalsByMonth(int year, int month) async {
-    final start = DateTime(year, month, 1);
-    final end = (month < 12)
-        ? DateTime(year, month + 1, 1)
-        : DateTime(year + 1, 1, 1);
+  Future<List<ExpenseWithCategory>> getExpensesWithCategoryByMonth(int year, int month) async {
+    final range = _monthDateRange(year, month);
+    return getExpensesWithCategoryByPeriod(range.start, range.end);
+  }
+
+  Future<List<CategoryExpenseTotal>> getCategoryTotalsByPeriod(
+    DateTime start,
+    DateTime end,
+  ) async {
+    _validateRange(start, end);
 
     final rows = await customSelect(
       '''
@@ -182,6 +201,11 @@ class AppDatabase extends _$AppDatabase {
           ),
         )
         .toList();
+  }
+
+  Future<List<CategoryExpenseTotal>> getCategoryTotalsByMonth(int year, int month) async {
+    final range = _monthDateRange(year, month);
+    return getCategoryTotalsByPeriod(range.start, range.end);
   }
 
   Future<List<Category>> getAllCategories() => select(categories).get();

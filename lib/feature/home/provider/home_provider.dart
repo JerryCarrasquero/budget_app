@@ -5,6 +5,8 @@ import 'package:budget_app/core/database/app_database.dart';
 import 'package:budget_app/feature/home/data/expense_data_source.dart';
 import 'package:budget_app/feature/home/domain/monthly_expenses.dart';
 
+enum HomePeriodMode { month, day, monthRange }
+
 class HomeProvider extends ChangeNotifier {
   final ExpenseDataSource _dataSource;
   StreamSubscription<List<Category>>? _categoriesSubscription;
@@ -14,6 +16,9 @@ class HomeProvider extends ChangeNotifier {
 
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
+  HomePeriodMode _periodMode = HomePeriodMode.month;
+  DateTime _periodStart = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime _periodEnd = DateTime(DateTime.now().year, DateTime.now().month + 1, 1);
   MonthlyExpenses _currentMonthlyExpenses = MonthlyExpenses(
     year: DateTime.now().year,
     month: DateTime.now().month,
@@ -30,16 +35,19 @@ class HomeProvider extends ChangeNotifier {
       categories,
     ) {
       _availableCategories = categories;
-      _refreshCurrentMonthData();
+      _refreshCurrentPeriodData();
     });
 
-    _subscribeToSelectedMonthExpenses();
+    _subscribeToCurrentPeriodExpenses();
 
-    _refreshCurrentMonthData();
+    _refreshCurrentPeriodData();
   }
 
   int get selectedYear => _selectedYear;
   int get selectedMonth => _selectedMonth;
+  HomePeriodMode get periodMode => _periodMode;
+  DateTime get periodStart => _periodStart;
+  DateTime get periodEnd => _periodEnd;
   bool get isLoading => _isLoading;
   List<Category> get availableCategories => _availableCategories;
   List<ExpenseWithCategory> get currentMonthlyExpenseItems =>
@@ -47,15 +55,65 @@ class HomeProvider extends ChangeNotifier {
   List<CategoryExpenseTotal> get categoryTotals => _categoryTotals;
 
   set selectedYear(int year) {
-    _selectedYear = year;
-    _subscribeToSelectedMonthExpenses();
-    _refreshCurrentMonthData();
+    setMonthPeriod(year, _selectedMonth);
   }
 
   set selectedMonth(int month) {
+    setMonthPeriod(_selectedYear, month);
+  }
+
+  void setMonthPeriod(int year, int month) {
+    _selectedYear = year;
     _selectedMonth = month;
-    _subscribeToSelectedMonthExpenses();
-    _refreshCurrentMonthData();
+    _periodMode = HomePeriodMode.month;
+    _periodStart = DateTime(year, month, 1);
+    _periodEnd = (month < 12)
+        ? DateTime(year, month + 1, 1)
+        : DateTime(year + 1, 1, 1);
+    _subscribeToCurrentPeriodExpenses();
+    _refreshCurrentPeriodData();
+  }
+
+  void setDayPeriod(DateTime day) {
+    _periodMode = HomePeriodMode.day;
+    _periodStart = DateTime(day.year, day.month, day.day);
+    _periodEnd = _periodStart.add(const Duration(days: 1));
+    _selectedYear = day.year;
+    _selectedMonth = day.month;
+    _subscribeToCurrentPeriodExpenses();
+    _refreshCurrentPeriodData();
+  }
+
+  void setMonthRangePeriod({
+    required int startYear,
+    required int startMonth,
+    required int endYear,
+    required int endMonth,
+  }) {
+    setDateRangePeriod(
+      start: DateTime(startYear, startMonth, 1),
+      end: DateTime(endYear, endMonth + 1, 1),
+    );
+  }
+
+  void setDateRangePeriod({
+    required DateTime start,
+    required DateTime end,
+  }) {
+    final normalizedStart = DateTime(start.year, start.month, start.day);
+    final normalizedEnd = DateTime(end.year, end.month, end.day);
+
+    if (!normalizedStart.isBefore(normalizedEnd)) {
+      return;
+    }
+
+    _periodMode = HomePeriodMode.monthRange;
+    _periodStart = normalizedStart;
+    _periodEnd = normalizedEnd;
+    _selectedYear = normalizedStart.year;
+    _selectedMonth = normalizedStart.month;
+    _subscribeToCurrentPeriodExpenses();
+    _refreshCurrentPeriodData();
   }
 
   MonthlyExpenses get currentMonthlyExpenses => _currentMonthlyExpenses;
@@ -84,10 +142,10 @@ class HomeProvider extends ChangeNotifier {
   }
 
   Future<void> loadCurrentMonthExpenses() async {
-    await _refreshCurrentMonthData();
+    await _refreshCurrentPeriodData();
   }
 
-  Future<void> _refreshCurrentMonthData() async {
+  Future<void> _refreshCurrentPeriodData() async {
     final currentRevision = ++_refreshRevision;
     _isLoading = true;
     _notifySafely();
@@ -95,18 +153,31 @@ class HomeProvider extends ChangeNotifier {
     final selectedYear = _selectedYear;
     final selectedMonth = _selectedMonth;
 
-    final expensesFuture = _dataSource.getExpensesByMonth(
-      selectedYear,
-      selectedMonth,
-    );
-    final expenseItemsFuture = _dataSource.getExpensesWithCategoryByMonth(
-      selectedYear,
-      selectedMonth,
-    );
-    final categoryTotalsFuture = _dataSource.getCategoryTotalsByMonth(
-      selectedYear,
-      selectedMonth,
-    );
+    final Future<List<Expense>> expensesFuture;
+    final Future<List<ExpenseWithCategory>> expenseItemsFuture;
+    final Future<List<CategoryExpenseTotal>> categoryTotalsFuture;
+
+    if (_periodMode == HomePeriodMode.month) {
+      expensesFuture = _dataSource.getExpensesByMonth(selectedYear, selectedMonth);
+      expenseItemsFuture = _dataSource.getExpensesWithCategoryByMonth(
+        selectedYear,
+        selectedMonth,
+      );
+      categoryTotalsFuture = _dataSource.getCategoryTotalsByMonth(
+        selectedYear,
+        selectedMonth,
+      );
+    } else {
+      expensesFuture = _dataSource.getExpensesByPeriod(_periodStart, _periodEnd);
+      expenseItemsFuture = _dataSource.getExpensesWithCategoryByPeriod(
+        _periodStart,
+        _periodEnd,
+      );
+      categoryTotalsFuture = _dataSource.getCategoryTotalsByPeriod(
+        _periodStart,
+        _periodEnd,
+      );
+    }
 
     try {
       final expenses = await expensesFuture;
@@ -132,12 +203,22 @@ class HomeProvider extends ChangeNotifier {
     }
   }
 
-  void _subscribeToSelectedMonthExpenses() {
+  void _subscribeToCurrentPeriodExpenses() {
     _expensesSubscription?.cancel();
+
+    if (_periodMode == HomePeriodMode.month) {
+      _expensesSubscription = _dataSource
+          .watchExpensesByMonth(_selectedYear, _selectedMonth)
+          .listen((_) {
+            _refreshCurrentPeriodData();
+          });
+      return;
+    }
+
     _expensesSubscription = _dataSource
-        .watchExpensesByMonth(_selectedYear, _selectedMonth)
+        .watchExpensesByPeriod(_periodStart, _periodEnd)
         .listen((_) {
-          _refreshCurrentMonthData();
+          _refreshCurrentPeriodData();
         });
   }
 

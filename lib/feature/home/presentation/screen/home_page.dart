@@ -6,9 +6,53 @@ import 'package:budget_app/feature/home/presentation/widget/add_expense_dialog.d
 import 'package:budget_app/feature/home/presentation/widget/app_drawer.dart';
 import 'package:budget_app/feature/home/presentation/widget/category_wheel_chart.dart';
 import 'package:budget_app/feature/home/presentation/widget/expense_details_dialog.dart';
+import 'package:budget_app/feature/home/presentation/widget/home_period_calendar_button.dart';
+import 'package:budget_app/feature/home/presentation/widget/home_period_header.dart';
 import 'package:provider/provider.dart';
+
 class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
+
+  DateTime _monthEndExclusive(DateTime date) {
+    return (date.month < 12)
+        ? DateTime(date.year, date.month + 1, 1)
+        : DateTime(date.year + 1, 1, 1);
+  }
+
+  String _buildPeriodLabel(BuildContext context, HomeProvider provider, List<String> monthNames) {
+    final localizations = MaterialLocalizations.of(context);
+
+    DateTime displayStart = provider.periodStart;
+    DateTime displayEndExclusive = provider.periodEnd;
+    final endInclusive = displayEndExclusive.subtract(const Duration(days: 1));
+
+    if (endInclusive.isAtSameMomentAs(displayStart)) {
+      return localizations.formatShortDate(displayStart);
+    }
+
+    if (provider.periodMode == HomePeriodMode.month) {
+      return '${monthNames[provider.selectedMonth]} ${provider.selectedYear}';
+    }
+
+    final isFullMonth = displayStart.day == 1 && displayEndExclusive == _monthEndExclusive(displayStart);
+    if (isFullMonth) {
+      final startMonth = monthNames[displayStart.month];
+      if (displayStart.year == endInclusive.year && displayStart.month == endInclusive.month) {
+        return '$startMonth ${displayStart.year}';
+      }
+      return '$startMonth ${displayStart.year} - ${monthNames[endInclusive.month]} ${endInclusive.year}';
+    }
+
+    final useShortDates = displayStart.month != endInclusive.month ||
+        displayStart.year != endInclusive.year ||
+        endInclusive.difference(displayStart).inDays > 30;
+
+    if (useShortDates) {
+      return '${localizations.formatShortDate(displayStart)} - ${localizations.formatShortDate(endInclusive)}';
+    }
+
+    return '${monthNames[displayStart.month]} ${displayStart.day} - ${monthNames[endInclusive.month]} ${endInclusive.day}, ${endInclusive.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,8 +62,10 @@ class HomePage extends StatelessWidget {
         builder: (context, provider, _) {
           final text = context.text;
           final monthNames = text.monthNames;
-          final currentMonth = provider.selectedMonth;
-          final currentYear = provider.selectedYear;
+          final periodLabel = _buildPeriodLabel(context, provider, monthNames);
+          final periodTitle = provider.periodMode == HomePeriodMode.month
+              ? text.currentMonth
+              : text.selectedPeriod;
           final expenses = provider.currentMonthlyExpenses.expenses;
           final expenseItems = provider.currentMonthlyExpenseItems;
           final groupedByCategory = provider.categoryTotals.where((item) => item.total > 0).toList();
@@ -27,44 +73,30 @@ class HomePage extends StatelessWidget {
           return Scaffold(
             appBar: AppBar(
               title: Text(text.appTitle),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.calendar_today),
-                  onPressed: () {
-                    // TODO: Show month/year picker
-                  },
-                ),
-              ],
             ),
             body: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(text.currentMonth, style: Theme.of(context).textTheme.bodySmall),
-                          Text(
-                            '${monthNames[currentMonth]} $currentYear',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(text.totalSpent, style: Theme.of(context).textTheme.bodySmall),
-                          Text(
-                            totalSpent.toStringAsFixed(2),
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                        ],
-                      ),
-                    ],
+                  HomePeriodHeader(
+                    periodTitle: periodTitle,
+                    periodLabel: periodLabel,
+                    trailing: HomePeriodCalendarButton(provider: provider),
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(text.totalSpent, style: Theme.of(context).textTheme.bodySmall),
+                        Text(
+                          totalSpent.toStringAsFixed(2),
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
                   CategoryWheelChart(categoryTotals: groupedByCategory),
