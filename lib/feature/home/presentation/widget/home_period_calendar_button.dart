@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:budget_app/core/text/app_text_provider.dart';
 import 'package:budget_app/feature/home/provider/home_provider.dart';
 
@@ -13,6 +14,64 @@ class HomePeriodCalendarButton extends StatelessWidget {
   });
 
   DateTime _monthStart(DateTime date) => DateTime(date.year, date.month, 1);
+
+  DateTime _normalizeDay(DateTime date) => DateTime(date.year, date.month, date.day);
+
+  CalendarDatePicker2WithActionButtonsConfig _buildCalendarConfig({
+    required BuildContext context,
+    required CalendarDatePicker2Type type,
+    required Set<DateTime> expenseDays,
+  }) {
+    final theme = Theme.of(context);
+    return CalendarDatePicker2WithActionButtonsConfig(
+      calendarType: type,
+      firstDate: DateTime(2000, 1, 1),
+      lastDate: DateTime(2100, 12, 31),
+      selectedDayHighlightColor: theme.colorScheme.primary,
+      closeDialogOnCancelTapped: true,
+      closeDialogOnOkTapped: true,
+      dayBuilder: ({
+        required date,
+        textStyle,
+        decoration,
+        isSelected,
+        isDisabled,
+        isToday,
+      }) {
+        final hasExpense = expenseDays.contains(_normalizeDay(date));
+        final markerColor = (isSelected ?? false)
+            ? Colors.white
+            : theme.colorScheme.primary;
+
+        return Container(
+          decoration: decoration,
+          child: Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Text(
+                  MaterialLocalizations.of(context).formatDecimal(date.day),
+                  style: textStyle,
+                ),
+                if (hasExpense)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 26),
+                    child: Container(
+                      width: 5,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: markerColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   Future<void> _showCalendarActionSheet(BuildContext context) async {
     final text = context.text;
@@ -59,45 +118,54 @@ class HomePeriodCalendarButton extends StatelessWidget {
   }
 
   Future<void> _pickDay(BuildContext context) async {
-    final text = context.text;
-    final picked = await showDatePicker(
+    final expenseDays = provider.expenseDaysForCalendar;
+    final pickedValues = await showCalendarDatePicker2Dialog(
       context: context,
-      initialDate: provider.periodStart,
-      firstDate: DateTime(2000, 1, 1),
-      lastDate: DateTime(2100, 12, 31),
-      helpText: text.selectDayTitle,
-      initialEntryMode: DatePickerEntryMode.calendarOnly,
+      dialogSize: const Size(360, 420),
+      config: _buildCalendarConfig(
+        context: context,
+        type: CalendarDatePicker2Type.single,
+        expenseDays: expenseDays,
+      ),
+      value: [provider.periodStart],
     );
 
-    if (picked == null) {
+    if (pickedValues == null || pickedValues.isEmpty || pickedValues.first == null) {
       return;
     }
 
-    provider.setDayPeriod(picked);
+    provider.setDayPeriod(_normalizeDay(pickedValues.first!));
   }
 
   Future<void> _pickDateRange(BuildContext context) async {
-    final pickedRange = await showDateRangePicker(
+    final expenseDays = provider.expenseDaysForCalendar;
+    final pickedValues = await showCalendarDatePicker2Dialog(
       context: context,
-      initialDateRange: DateTimeRange(
-        start: provider.periodStart,
-        end: provider.periodEnd.subtract(const Duration(days: 1)),
+      dialogSize: const Size(360, 420),
+      config: _buildCalendarConfig(
+        context: context,
+        type: CalendarDatePicker2Type.range,
+        expenseDays: expenseDays,
       ),
-      firstDate: DateTime(2000, 1, 1),
-      lastDate: DateTime(2100, 12, 31),
-      helpText: context.text.selectStartMonthTitle,
-      saveText: context.text.save,
-      cancelText: context.text.cancel,
-      initialEntryMode: DatePickerEntryMode.calendarOnly,
+      value: [provider.periodStart, provider.periodEnd.subtract(const Duration(days: 1))],
     );
 
-    if (pickedRange == null) {
+    if (pickedValues == null) {
       return;
     }
 
+    final dates = pickedValues.whereType<DateTime>().toList();
+    if (dates.length < 2) {
+      return;
+    }
+
+    dates.sort();
+    final start = _normalizeDay(dates.first);
+    final end = _normalizeDay(dates.last).add(const Duration(days: 1));
+
     provider.setDateRangePeriod(
-      start: _monthStart(pickedRange.start),
-      end: pickedRange.end.add(const Duration(days: 1)),
+      start: _monthStart(start),
+      end: end,
     );
   }
 

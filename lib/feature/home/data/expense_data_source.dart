@@ -11,6 +11,18 @@ class ExpenseDataSource {
     return _db.getAllCategories();
   }
 
+  Future<List<Expense>> getAllExpenses() {
+    return _db.getAllExpenses();
+  }
+
+  Future<Expense?> getExpenseById(int id) {
+    return _db.getExpenseById(id);
+  }
+
+  Future<Map<DateTime, int>> getExpenseDayCounts() {
+    return _db.getExpenseDayCounts();
+  }
+
   Stream<List<Category>> watchAllCategories() {
     return _db.watchAllCategories();
   }
@@ -19,14 +31,14 @@ class ExpenseDataSource {
     return _db.watchAllExpenses();
   }
 
-  Future<void> addExpense({
+  Future<bool> addExpense({
     String? name,
     required double amount,
     required int categoryId,
     DateTime? date,
   }) async {
     if (amount <= 0) {
-      return;
+      return false;
     }
 
     final normalizedName = InputSanitizer.sanitizeExpenseName(name);
@@ -40,6 +52,15 @@ class ExpenseDataSource {
         categoryId: Value(categoryId),
       ),
     );
+    return true;
+  }
+
+  Future<bool> updateExpense(Expense expense) {
+    return _db.updateExpense(expense);
+  }
+
+  Future<int> deleteExpense(int id) {
+    return _db.deleteExpense(id);
   }
 
   Future<List<Expense>> getExpensesByMonth(int year, int month) async {

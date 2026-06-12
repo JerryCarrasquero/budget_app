@@ -27,6 +27,9 @@ class HomeProvider extends ChangeNotifier {
   List<Category> _availableCategories = [];
   List<ExpenseWithCategory> _currentMonthlyExpenseItems = [];
   List<CategoryExpenseTotal> _categoryTotals = [];
+  Map<DateTime, int> _expenseDayCounts = <DateTime, int>{};
+  Set<DateTime> _expenseDaysForCalendar = <DateTime>{};
+  bool _expenseDaysLoaded = false;
   bool _isLoading = false;
 
   HomeProvider(AppDatabase database)
@@ -41,6 +44,7 @@ class HomeProvider extends ChangeNotifier {
     _subscribeToCurrentPeriodExpenses();
 
     _refreshCurrentPeriodData();
+    _loadExpenseDaysForCalendarIfNeeded();
   }
 
   int get selectedYear => _selectedYear;
@@ -53,6 +57,7 @@ class HomeProvider extends ChangeNotifier {
   List<ExpenseWithCategory> get currentMonthlyExpenseItems =>
       _currentMonthlyExpenseItems;
   List<CategoryExpenseTotal> get categoryTotals => _categoryTotals;
+  Set<DateTime> get expenseDaysForCalendar => _expenseDaysForCalendar;
 
   set selectedYear(int year) {
     setMonthPeriod(year, _selectedMonth);
@@ -122,12 +127,56 @@ class HomeProvider extends ChangeNotifier {
     String? name,
     required double amount,
     required int categoryId,
+    DateTime? date,
   }) async {
-    await _dataSource.addExpense(
+    final expenseDate = date ?? DateTime.now();
+    final inserted = await _dataSource.addExpense(
       name: name,
       amount: amount,
       categoryId: categoryId,
+      date: expenseDate,
     );
+
+    if (inserted) {
+      _incrementExpenseDay(expenseDate);
+    }
+  }
+
+  Future<bool> updateExpense(Expense updatedExpense) async {
+    final existingExpense = await _dataSource.getExpenseById(updatedExpense.id);
+    if (existingExpense == null) {
+      return false;
+    }
+
+    final updated = await _dataSource.updateExpense(updatedExpense);
+    if (!updated) {
+      return false;
+    }
+
+    final oldDay = _normalizeDay(existingExpense.date);
+    final newDay = _normalizeDay(updatedExpense.date);
+
+    if (oldDay != newDay) {
+      _decrementExpenseDay(oldDay);
+      _incrementExpenseDay(newDay);
+    }
+
+    return true;
+  }
+
+  Future<bool> deleteExpense(int expenseId) async {
+    final existingExpense = await _dataSource.getExpenseById(expenseId);
+    if (existingExpense == null) {
+      return false;
+    }
+
+    final deletedRows = await _dataSource.deleteExpense(expenseId);
+    if (deletedRows <= 0) {
+      return false;
+    }
+
+    _decrementExpenseDay(existingExpense.date);
+    return true;
   }
 
   Future<List<Category>> loadCategoriesForDialog() async {
@@ -143,6 +192,63 @@ class HomeProvider extends ChangeNotifier {
 
   Future<void> loadCurrentMonthExpenses() async {
     await _refreshCurrentPeriodData();
+  }
+
+  Future<Set<DateTime>> loadExpenseDaysForCalendar() async {
+    await _loadExpenseDaysForCalendarIfNeeded();
+    return _expenseDaysForCalendar;
+  }
+
+  Future<void> preloadExpenseDaysForCalendar() async {
+    await _loadExpenseDaysForCalendarIfNeeded();
+  }
+
+  Future<void> _loadExpenseDaysForCalendarIfNeeded() async {
+    if (_expenseDaysLoaded) {
+      return;
+    }
+
+    final dayCounts = await _dataSource.getExpenseDayCounts();
+    if (_isDisposed) {
+      return;
+    }
+
+    _expenseDayCounts = dayCounts;
+    _expenseDaysForCalendar = dayCounts.keys.toSet();
+    _expenseDaysLoaded = true;
+  }
+
+  DateTime _normalizeDay(DateTime date) => DateTime(date.year, date.month, date.day);
+
+  void _incrementExpenseDay(DateTime date) {
+    final day = _normalizeDay(date);
+    final previousCount = _expenseDayCounts[day] ?? 0;
+    _expenseDayCounts[day] = previousCount + 1;
+
+    if (previousCount == 0) {
+      _expenseDaysForCalendar = {..._expenseDaysForCalendar, day};
+      _notifySafely();
+    }
+  }
+
+  void _decrementExpenseDay(DateTime date) {
+    final day = _normalizeDay(date);
+    final previousCount = _expenseDayCounts[day] ?? 0;
+    if (previousCount <= 0) {
+      return;
+    }
+
+    if (previousCount == 1) {
+      _expenseDayCounts.remove(day);
+      final nextDays = {..._expenseDaysForCalendar};
+      if (nextDays.remove(day)) {
+        _expenseDaysForCalendar = nextDays;
+        _notifySafely();
+      }
+      return;
+    }
+
+    _expenseDayCounts[day] = previousCount - 1;
   }
 
   Future<void> _refreshCurrentPeriodData() async {

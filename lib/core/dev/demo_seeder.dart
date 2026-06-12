@@ -79,6 +79,36 @@ class DemoSeeder {
         const _ExpenseSeed(category: 'cleaning supply', cost: 400, name: 'detergent'),
         const _ExpenseSeed(category: 'clothes', cost: 300, name: ''),
         const _ExpenseSeed(category: 'pet', cost: 300, name: 'Kibble'),
+        _ExpenseSeed(
+          category: 'furniture',
+          cost: 680,
+          name: 'desk lamp',
+          date: DateTime(2025, 1, 9),
+        ),
+        _ExpenseSeed(
+          category: 'pet',
+          cost: 215,
+          name: 'vet check',
+          date: DateTime(2025, 2, 22),
+        ),
+        _ExpenseSeed(
+          category: 'TCG',
+          cost: 95,
+          name: 'booster pack',
+          date: DateTime(2025, 4, 5),
+        ),
+        _ExpenseSeed(
+          category: 'clothes',
+          cost: 180,
+          name: 'socks bundle',
+          date: DateTime(2025, 7, 14),
+        ),
+        _ExpenseSeed(
+          category: 'cleaning supply',
+          cost: 140,
+          name: 'mop refill',
+          date: DateTime(2025, 11, 3),
+        ),
       ];
 
       for (final expense in dummyExpenses) {
@@ -92,7 +122,7 @@ class DemoSeeder {
           ExpensesCompanion(
             name: normalizedName.isEmpty ? const Value.absent() : Value(normalizedName),
             amount: Value(expense.cost),
-            date: Value(now),
+            date: Value(expense.date ?? now),
             categoryId: Value(category.id),
           ),
         );
@@ -113,10 +143,12 @@ class _ExpenseSeed {
   final String category;
   final double cost;
   final String name;
+  final DateTime? date;
 
   const _ExpenseSeed({
     required this.category,
     required this.cost,
     required this.name,
+    this.date,
   });
 }

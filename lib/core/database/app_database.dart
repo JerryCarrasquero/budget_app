@@ -121,6 +121,35 @@ class AppDatabase extends _$AppDatabase {
   // CRUD operations
   Future<List<Expense>> getAllExpenses() => select(expenses).get();
   Stream<List<Expense>> watchAllExpenses() => select(expenses).watch();
+  Future<Expense?> getExpenseById(int id) {
+    return (select(expenses)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<Map<DateTime, int>> getExpenseDayCounts() async {
+    final dateColumn = expenses.date;
+    final countColumn = expenses.id.count();
+
+    final query = selectOnly(expenses)
+      ..addColumns([dateColumn, countColumn])
+      ..groupBy([dateColumn]);
+
+    final rows = await query.get();
+    final dayCounts = <DateTime, int>{};
+
+    for (final row in rows) {
+      final date = row.read(dateColumn);
+      final count = row.read(countColumn);
+      if (date == null || count == null) {
+        continue;
+      }
+
+      final normalizedDay = DateTime(date.year, date.month, date.day);
+      dayCounts[normalizedDay] = count;
+    }
+
+    return dayCounts;
+  }
+
   Future<int> insertExpense(ExpensesCompanion expense) => into(expenses).insert(expense);
   Future<bool> updateExpense(Expense expense) => update(expenses).replace(expense);
   Future<int> deleteExpense(int id) => (delete(expenses)..where((tbl) => tbl.id.equals(id))).go();
