@@ -148,43 +148,46 @@ void main() {
       'ExpenseDataSource watchAll streams emit category and expense changes',
       () async {
         final db = AppDatabase(NativeDatabase.memory());
-        final dataSource = ExpenseDataSource(db);
+        try {
+          final dataSource = ExpenseDataSource(db);
 
-        final categoriesExpectation = expectLater(
-          dataSource.watchAllCategories(),
-          emitsThrough(
-            predicate<List<Category>>(
-              (items) => items.any((category) => category.name == 'Food'),
-            ),
-          ),
-        );
-
-        final expensesExpectation = expectLater(
-          dataSource.watchAllExpenses(),
-          emitsThrough(
-            predicate<List<Expense>>(
-              (items) => items.any(
-                (expense) => expense.name == 'Lunch' && expense.amount == 50.0,
+          final categoriesExpectation = expectLater(
+            dataSource.watchAllCategories(),
+            emitsThrough(
+              predicate<List<Category>>(
+                (items) => items.any((category) => category.name == 'Food'),
               ),
             ),
-          ),
-        );
+          );
 
-        final categoryId = await db.insertCategory(
-          CategoriesCompanion.insert(name: 'Food'),
-        );
+          final expensesExpectation = expectLater(
+            dataSource.watchAllExpenses(),
+            emitsThrough(
+              predicate<List<Expense>>(
+                (items) => items.any(
+                  (expense) =>
+                      expense.name == 'Lunch' && expense.amount == 50.0,
+                ),
+              ),
+            ),
+          );
 
-        await dataSource.addExpense(
-          name: 'Lunch',
-          amount: 50,
-          categoryId: categoryId,
-          date: DateTime(2026, 6, 13),
-        );
+          final categoryId = await db.insertCategory(
+            CategoriesCompanion.insert(name: 'Food'),
+          );
 
-        await categoriesExpectation;
-        await expensesExpectation;
+          await dataSource.addExpense(
+            name: 'Lunch',
+            amount: 50,
+            categoryId: categoryId,
+            date: DateTime(2026, 6, 13),
+          );
 
-        await db.close();
+          await categoriesExpectation;
+          await expensesExpectation;
+        } finally {
+          await db.close();
+        }
       },
     );
   });

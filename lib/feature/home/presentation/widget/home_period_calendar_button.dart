@@ -8,14 +8,10 @@ enum _CalendarFilterChoice { day, timeLength }
 class HomePeriodCalendarButton extends StatelessWidget {
   final HomeProvider provider;
 
-  const HomePeriodCalendarButton({
-    super.key,
-    required this.provider,
-  });
+  const HomePeriodCalendarButton({super.key, required this.provider});
 
-  DateTime _monthStart(DateTime date) => DateTime(date.year, date.month, 1);
-
-  DateTime _normalizeDay(DateTime date) => DateTime(date.year, date.month, date.day);
+  DateTime _normalizeDay(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 
   CalendarDatePicker2WithActionButtonsConfig _buildCalendarConfig({
     required BuildContext context,
@@ -30,46 +26,47 @@ class HomePeriodCalendarButton extends StatelessWidget {
       selectedDayHighlightColor: theme.colorScheme.primary,
       closeDialogOnCancelTapped: true,
       closeDialogOnOkTapped: true,
-      dayBuilder: ({
-        required date,
-        textStyle,
-        decoration,
-        isSelected,
-        isDisabled,
-        isToday,
-      }) {
-        final hasExpense = expenseDays.contains(_normalizeDay(date));
-        final markerColor = (isSelected ?? false)
-            ? Colors.white
-            : theme.colorScheme.primary;
+      dayBuilder:
+          ({
+            required date,
+            textStyle,
+            decoration,
+            isSelected,
+            isDisabled,
+            isToday,
+          }) {
+            final hasExpense = expenseDays.contains(_normalizeDay(date));
+            final markerColor = (isSelected ?? false)
+                ? Colors.white
+                : theme.colorScheme.primary;
 
-        return Container(
-          decoration: decoration,
-          child: Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Text(
-                  MaterialLocalizations.of(context).formatDecimal(date.day),
-                  style: textStyle,
-                ),
-                if (hasExpense)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 26),
-                    child: Container(
-                      width: 5,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: markerColor,
-                        shape: BoxShape.circle,
-                      ),
+            return Container(
+              decoration: decoration,
+              child: Center(
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Text(
+                      MaterialLocalizations.of(context).formatDecimal(date.day),
+                      style: textStyle,
                     ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
+                    if (hasExpense)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 26),
+                        child: Container(
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: markerColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
     );
   }
 
@@ -82,9 +79,7 @@ class HomePeriodCalendarButton extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                title: Text(text.pickFilterTypeTitle),
-              ),
+              ListTile(title: Text(text.pickFilterTypeTitle)),
               ListTile(
                 leading: const Icon(Icons.today),
                 title: Text(text.filterByDay),
@@ -96,7 +91,9 @@ class HomePeriodCalendarButton extends StatelessWidget {
                 leading: const Icon(Icons.date_range),
                 title: Text(text.filterByTimeLength),
                 onTap: () {
-                  Navigator.of(sheetContext).pop(_CalendarFilterChoice.timeLength);
+                  Navigator.of(
+                    sheetContext,
+                  ).pop(_CalendarFilterChoice.timeLength);
                 },
               ),
             ],
@@ -130,7 +127,9 @@ class HomePeriodCalendarButton extends StatelessWidget {
       value: [provider.periodStart],
     );
 
-    if (pickedValues == null || pickedValues.isEmpty || pickedValues.first == null) {
+    if (pickedValues == null ||
+        pickedValues.isEmpty ||
+        pickedValues.first == null) {
       return;
     }
 
@@ -147,7 +146,10 @@ class HomePeriodCalendarButton extends StatelessWidget {
         type: CalendarDatePicker2Type.range,
         expenseDays: expenseDays,
       ),
-      value: [provider.periodStart, provider.periodEnd.subtract(const Duration(days: 1))],
+      value: [
+        provider.periodStart,
+        provider.periodEnd.subtract(const Duration(days: 1)),
+      ],
     );
 
     if (pickedValues == null) {
@@ -163,10 +165,7 @@ class HomePeriodCalendarButton extends StatelessWidget {
     final start = _normalizeDay(dates.first);
     final end = _normalizeDay(dates.last).add(const Duration(days: 1));
 
-    provider.setDateRangePeriod(
-      start: _monthStart(start),
-      end: end,
-    );
+    provider.setDateRangePeriod(start: start, end: end);
   }
 
   @override

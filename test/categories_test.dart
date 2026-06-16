@@ -70,8 +70,19 @@ void main() {
         final db = AppDatabase(NativeDatabase.memory());
         final provider = CategoriesProvider(db);
 
-        await provider.addCategory('  F@@oo###d  ', 0xFF123456, 0xe532);
-        await provider.addCategory('food', 0xFF654321, 0xe571);
+        final firstResult = await provider.addCategory(
+          '  F@@oo###d  ',
+          0xFF123456,
+          0xe532,
+        );
+        final secondResult = await provider.addCategory(
+          'food',
+          0xFF654321,
+          0xe571,
+        );
+
+        expect(firstResult, AddCategoryResult.success);
+        expect(secondResult, AddCategoryResult.duplicate);
 
         final categories = await db.getAllCategories();
         final food = categories.where((c) => c.name == 'Food').toList();

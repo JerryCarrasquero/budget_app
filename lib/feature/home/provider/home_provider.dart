@@ -299,9 +299,14 @@ class HomeProvider extends ChangeNotifier {
     }
 
     try {
-      final expenses = await expensesFuture;
-      final expenseItems = await expenseItemsFuture;
-      final categoryTotals = await categoryTotalsFuture;
+      final results = await Future.wait<Object>([
+        expensesFuture,
+        expenseItemsFuture,
+        categoryTotalsFuture,
+      ]);
+      final expenses = results[0] as List<Expense>;
+      final expenseItems = results[1] as List<ExpenseWithCategory>;
+      final categoryTotals = results[2] as List<CategoryExpenseTotal>;
 
       if (currentRevision != _refreshRevision || _isDisposed) {
         return;
