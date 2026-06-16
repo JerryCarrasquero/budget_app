@@ -7,15 +7,15 @@ class AppTexts {
   static const String statistics = 'Statistics';
 
   static const String currentMonth = 'Current Month:';
-    static const String selectedPeriod = 'Selected Period:';
+  static const String selectedPeriod = 'Selected Period:';
   static const String totalSpent = 'Total Spent';
   static const String expenses = 'Expenses';
-    static const String filterByDay = 'Day';
-    static const String filterByTimeLength = 'Time Length';
-    static const String pickFilterTypeTitle = 'Pick filter type';
-    static const String selectDayTitle = 'Select day';
-    static const String selectStartMonthTitle = 'Select start month';
-    static const String selectEndMonthTitle = 'Select end month';
+  static const String filterByDay = 'Day';
+  static const String filterByTimeLength = 'Time Length';
+  static const String pickFilterTypeTitle = 'Pick filter type';
+  static const String selectDayTitle = 'Select day';
+  static const String selectStartMonthTitle = 'Select start month';
+  static const String selectEndMonthTitle = 'Select end month';
   static const String noWheelData = 'No data for wheel chart yet';
   static const String expenseDetailsTitle = 'Expense Details';
   static const String expenseAmountLabel = 'Amount';

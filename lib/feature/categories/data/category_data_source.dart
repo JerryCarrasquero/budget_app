@@ -23,7 +23,7 @@ class CategoryDataSource {
                 ..limit(2))
               .get();
 
-      if (existing.length > 1 || existing.length == 1) {
+      if (existing.isNotEmpty) {
         throw DuplicateCategoryNameException(name);
       }
 

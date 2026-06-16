@@ -76,14 +76,14 @@ class ExpenseDataSource {
         .get();
   }
 
-        Future<List<Expense>> getExpensesByPeriod(DateTime start, DateTime end) {
-          return (_db.select(_db.expenses)..where(
-            (tbl) =>
-            tbl.date.isBiggerOrEqualValue(start) &
-            tbl.date.isSmallerThanValue(end),
-          ))
-          .get();
-        }
+  Future<List<Expense>> getExpensesByPeriod(DateTime start, DateTime end) {
+    return (_db.select(_db.expenses)..where(
+          (tbl) =>
+              tbl.date.isBiggerOrEqualValue(start) &
+              tbl.date.isSmallerThanValue(end),
+        ))
+        .get();
+  }
 
   Stream<List<Expense>> watchExpensesByMonth(int year, int month) {
     final start = DateTime(year, month, 1);
@@ -99,14 +99,14 @@ class ExpenseDataSource {
         .watch();
   }
 
-        Stream<List<Expense>> watchExpensesByPeriod(DateTime start, DateTime end) {
-          return (_db.select(_db.expenses)..where(
-            (tbl) =>
-            tbl.date.isBiggerOrEqualValue(start) &
-            tbl.date.isSmallerThanValue(end),
-          ))
-          .watch();
-        }
+  Stream<List<Expense>> watchExpensesByPeriod(DateTime start, DateTime end) {
+    return (_db.select(_db.expenses)..where(
+          (tbl) =>
+              tbl.date.isBiggerOrEqualValue(start) &
+              tbl.date.isSmallerThanValue(end),
+        ))
+        .watch();
+  }
 
   Future<List<ExpenseWithCategory>> getExpensesWithCategoryByMonth(
     int year,

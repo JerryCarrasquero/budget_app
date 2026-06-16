@@ -17,8 +17,16 @@ class HomeProvider extends ChangeNotifier {
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
   HomePeriodMode _periodMode = HomePeriodMode.month;
-  DateTime _periodStart = DateTime(DateTime.now().year, DateTime.now().month, 1);
-  DateTime _periodEnd = DateTime(DateTime.now().year, DateTime.now().month + 1, 1);
+  DateTime _periodStart = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    1,
+  );
+  DateTime _periodEnd = DateTime(
+    DateTime.now().year,
+    DateTime.now().month + 1,
+    1,
+  );
   MonthlyExpenses _currentMonthlyExpenses = MonthlyExpenses(
     year: DateTime.now().year,
     month: DateTime.now().month,
@@ -101,10 +109,7 @@ class HomeProvider extends ChangeNotifier {
     );
   }
 
-  void setDateRangePeriod({
-    required DateTime start,
-    required DateTime end,
-  }) {
+  void setDateRangePeriod({required DateTime start, required DateTime end}) {
     final normalizedStart = DateTime(start.year, start.month, start.day);
     final normalizedEnd = DateTime(end.year, end.month, end.day);
 
@@ -216,9 +221,11 @@ class HomeProvider extends ChangeNotifier {
     _expenseDayCounts = dayCounts;
     _expenseDaysForCalendar = dayCounts.keys.toSet();
     _expenseDaysLoaded = true;
+    _notifySafely();
   }
 
-  DateTime _normalizeDay(DateTime date) => DateTime(date.year, date.month, date.day);
+  DateTime _normalizeDay(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 
   void _incrementExpenseDay(DateTime date) {
     final day = _normalizeDay(date);
@@ -264,7 +271,10 @@ class HomeProvider extends ChangeNotifier {
     final Future<List<CategoryExpenseTotal>> categoryTotalsFuture;
 
     if (_periodMode == HomePeriodMode.month) {
-      expensesFuture = _dataSource.getExpensesByMonth(selectedYear, selectedMonth);
+      expensesFuture = _dataSource.getExpensesByMonth(
+        selectedYear,
+        selectedMonth,
+      );
       expenseItemsFuture = _dataSource.getExpensesWithCategoryByMonth(
         selectedYear,
         selectedMonth,
@@ -274,7 +284,10 @@ class HomeProvider extends ChangeNotifier {
         selectedMonth,
       );
     } else {
-      expensesFuture = _dataSource.getExpensesByPeriod(_periodStart, _periodEnd);
+      expensesFuture = _dataSource.getExpensesByPeriod(
+        _periodStart,
+        _periodEnd,
+      );
       expenseItemsFuture = _dataSource.getExpensesWithCategoryByPeriod(
         _periodStart,
         _periodEnd,
