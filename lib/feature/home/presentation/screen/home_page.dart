@@ -139,6 +139,9 @@ class HomePage extends StatelessWidget {
                         final expenseItem = expenseItems[index];
                         final expense = expenseItem.expense;
                         final category = expenseItem.category;
+                        final expenseDateLabel = MaterialLocalizations.of(
+                          context,
+                        ).formatShortDate(expense.date);
                         return Card(
                           child: ListTile(
                             leading: CircleAvatar(
@@ -154,8 +157,18 @@ class HomePage extends StatelessWidget {
                                   ? expense.name!
                                   : text.unnamedCategoryExpense(category.name),
                             ),
-                            subtitle: Text('${expense.date.year}-${expense.date.month.toString().padLeft(2, '0')}-${expense.date.day.toString().padLeft(2, '0')}'),
-                            trailing: Text(expense.amount.toStringAsFixed(2)),
+                            trailing: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  expenseDateLabel,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(expense.amount.toStringAsFixed(2)),
+                              ],
+                            ),
                             onTap: () {
                               showExpenseDetailsDialog(
                                 context,
