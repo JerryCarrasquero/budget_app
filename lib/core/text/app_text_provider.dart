@@ -11,8 +11,15 @@ class AppTextProvider {
   String get recurringExpenses => AppTexts.recurringExpenses;
   String get statistics => AppTexts.statistics;
   String get currentMonth => AppTexts.currentMonth;
+  String get selectedPeriod => AppTexts.selectedPeriod;
   String get totalSpent => AppTexts.totalSpent;
   String get expenses => AppTexts.expenses;
+  String get filterByDay => AppTexts.filterByDay;
+  String get filterByTimeLength => AppTexts.filterByTimeLength;
+  String get pickFilterTypeTitle => AppTexts.pickFilterTypeTitle;
+  String get selectDayTitle => AppTexts.selectDayTitle;
+  String get selectStartMonthTitle => AppTexts.selectStartMonthTitle;
+  String get selectEndMonthTitle => AppTexts.selectEndMonthTitle;
   String get noWheelData => AppTexts.noWheelData;
   String get expenseDetailsTitle => AppTexts.expenseDetailsTitle;
   String get expenseAmountLabel => AppTexts.expenseAmountLabel;
@@ -25,6 +32,10 @@ class AppTextProvider {
   String get addExpenseCategoryHint => AppTexts.addExpenseCategoryHint;
   String get addCategoryTitle => AppTexts.addCategoryTitle;
   String get addCategoryHint => AppTexts.addCategoryHint;
+  String get categoryNameRequired => AppTexts.categoryNameRequired;
+  String get categoryNameInvalid => AppTexts.categoryNameInvalid;
+  String get categoryNameDuplicate => AppTexts.categoryNameDuplicate;
+  String get categorySaveFailed => AppTexts.categorySaveFailed;
   String get cancel => AppTexts.cancel;
   String get save => AppTexts.save;
   String get noCategoriesYet => AppTexts.noCategoriesYet;

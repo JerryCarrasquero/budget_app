@@ -1,7 +1,7 @@
 import 'package:budget_app/core/database/app_database.dart';
 import 'package:budget_app/core/text/app_text_provider.dart';
 import 'package:budget_app/core/utils/input_sanitizer.dart';
-import 'package:budget_app/feature/home/presentation/provider/home_provider.dart';
+import 'package:budget_app/feature/home/provider/home_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
